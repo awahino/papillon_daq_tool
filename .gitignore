@@ -3,3 +3,4 @@ build/*
 test/build/*
 output/*.root
 output/*.txt
+.DS_Store

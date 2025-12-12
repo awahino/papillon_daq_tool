@@ -22,3 +22,32 @@ See Tairafune's [wiki](https://github.com/316higgs/PAPILLON_FW/wiki/DAQ-scripts)
 # Data process
 convert binary output to txt, then root.
 `makeTree.C` can store waveform of each trigger in TTree.
+TTree structure:
+```
+root [1] papillon->Print()
+******************************************************************************
+*Tree    :papillon  : papillon                                               *
+*Entries :       10 : Total =         1260125 bytes  File  Size =     131146 *
+*        :          : Tree compression factor =   9.65                       *
+******************************************************************************
+*Br    0 :TrigID    : TrigID/I                                               *
+*Entries :       10 : Total  Size=        606 bytes  File Size  =        117 *
+*Baskets :        1 : Basket Size=      32000 bytes  Compression=   1.00     *
+*............................................................................*
+*Br    1 :waveform  : waveform[24][640]/I                                    *
+*Entries :       10 : Total  Size=     615725 bytes  File Size  =      62774 *
+*Baskets :       10 : Basket Size=      32000 bytes  Compression=   9.80     *
+*............................................................................*
+*Br    2 :adcwave   : adcwave[24][640]/I                                     *
+*Entries :       10 : Total  Size=     615711 bytes  File Size  =      63535 *
+*Baskets :       10 : Basket Size=      32000 bytes  Compression=   9.68     *
+*............................................................................*
+*Br    3 :sample    : sample[640]/I                                          *
+*Entries :       10 : Total  Size=      26176 bytes  File Size  =       3682 *
+*Baskets :        1 : Basket Size=      32000 bytes  Compression=   6.97     *
+*............................................................................*
+*Br    4 :Qstrip    : Qstrip[24]/I                                           *
+*Entries :       10 : Total  Size=       1534 bytes  File Size  =        105 *
+*Baskets :        1 : Basket Size=      32000 bytes  Compression=   9.88     *
+*............................................................................*
+```
