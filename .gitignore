@@ -1,0 +1,5 @@
+obj/*
+build/*
+test/build/*
+output/*.root
+output/*.txt

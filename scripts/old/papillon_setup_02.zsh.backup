@@ -1,0 +1,25 @@
+#!/bin/zsh
+
+ip="192.168.10.17"
+
+sleep 1
+echo 'load ./setup_papillon/setup_adc1.txt\n quit' | python rbcpshell_v2.py ${ip} 4660
+sleep 1
+echo "load ./setup_papillon/setup_adc2.txt\n quit" | python rbcpshell_v2.py ${ip} 4660
+sleep 1
+echo "load ./setup_papillon/setup_adc3.txt\n quit" | python rbcpshell_v2.py ${ip} 4660
+sleep 1
+echo "load ./setup_papillon/setup_adcclk.txt\n quit" | python rbcpshell_v2.py ${ip} 4660
+sleep 1
+echo "load ./setup_papillon/setup_register.txt\n quit" | python rbcpshell_v2.py ${ip} 4660
+sleep 1
+echo "load ./setup_papillon/pedestal_SSEM06_P102.txt\n quit" | python rbcpshell_v2.py ${ip} 4660
+sleep 1
+
+##
+echo "load ./setup_papillon/strip_pos_06_y.txt\n quit" | python rbcpshell_v2.py ${ip} 4660
+sleep 1
+
+##
+echo "load ./setup_papillon/mux_8.txt\n quit" | python rbcpshell_v2.py ${ip} 4660
+sleep 1
