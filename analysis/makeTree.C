@@ -30,7 +30,7 @@ float GetStripPos(int ch, float xstrip);
 void SetHisto();
 
 
-void makeTree(TString dataname = "./sin1000kHz400mV_20251211_00.txt") {
+void makeTree(TString dataname = "../output/sin1000kHz400mV_20251211_00.txt") {
 
   //==== File encording and opening
   TString fname = dataname;
@@ -48,26 +48,33 @@ void makeTree(TString dataname = "./sin1000kHz400mV_20251211_00.txt") {
   //==== Extracting of header info
   int TrigID = -1;
   TString header[HEADERNUM][HEADBLOCK];   // header information
+  int head[HEADERNUM];                    // header information in decimal
   int waveform[PAPILLONCH][SAMPLENUM];    // 1st index: CH, 2nd index: sampling number per ch
   int sample[SAMPLENUM];                  // 1st index: sampling number per ch
+  int channel[PAPILLONCH];                // 1st index: sampling number per ch
   int adcwave[PAPILLONCH][SAMPLENUM];     // 1st index: CH, 2nd index: sampling number per ch
+  float Pedestal[PAPILLONCH];
+  int Qstrip[PAPILLONCH];                 // Predicted accumulated signal quantities
   //float Qstrip[PAPILLONCH];               // Predicted accumulated signal quantities
-  int Qstrip[PAPILLONCH];               // Predicted accumulated signal quantities
   for (int ch=0; ch<PAPILLONCH; ch++) {
-      Qstrip[ch] = 0.;
+      channel[ch] = ch;
       for (int isample=0; isample<SAMPLENUM; isample++) {
           waveform[ch][isample] = 0;
           if(ch==0) sample[isample] = isample;
       }
   }
-  TFile *fout = TFile::Open("test.root", "recreate");
+
+  TFile *fout = TFile::Open("../output/test.root", "recreate");
       fout->cd();
   TTree *tree = new TTree("papillon", "papillon");
-      tree->Branch("TrigID", &TrigID, "TrigID/I");
+      tree->Branch("TrigID", &TrigID,    "TrigID/I");
+      tree->Branch("head",     head,     Form("head[%d]/I", HEADERNUM));
+      tree->Branch("channel",  channel,  Form("channel[%d]/I", PAPILLONCH));
+      tree->Branch("sample",   sample,   Form("sample[%d]/I", SAMPLENUM));
       tree->Branch("waveform", waveform, Form("waveform[%d][%d]/I", PAPILLONCH, SAMPLENUM));
-      tree->Branch("adcwave", adcwave, Form("adcwave[%d][%d]/I", PAPILLONCH, SAMPLENUM));
-      tree->Branch("sample", sample, Form("sample[%d]/I", SAMPLENUM));
-      tree->Branch("Qstrip", Qstrip, Form("Qstrip[%d]/I", PAPILLONCH));
+      tree->Branch("adcwave",  adcwave,  Form("adcwave[%d][%d]/I", PAPILLONCH, SAMPLENUM));
+      tree->Branch("Qstrip",   Qstrip,   Form("Qstrip[%d]/I", PAPILLONCH));
+      tree->Branch("Pedestal", Pedestal, Form("Pedestal[%d]/F", PAPILLONCH));
 
   bool linefull = true; //read from the head of the line or not?
   int blocknum = 0;     //Count data block
@@ -82,7 +89,24 @@ void makeTree(TString dataname = "./sin1000kHz400mV_20251211_00.txt") {
     //if (blocknum==0 || blocknum%(14+48*DEFAULTSAMP)==0) {
     //if (blocknum==0 || blocknum%15374==0) { //14 (header) + NCH*NSAMPLE
     if (blocknum==0 || blocknum%(HEADERNUM*HEADBLOCK+PAPILLONCH*DEFAULTSAMP)==0) {
-        if(TrigID >= 0) tree->Fill();
+        if(TrigID >= 0){
+            for (int ch = 0; ch<PAPILLONCH; ch++){
+                Pedestal[ch] /= PEDESTALSAMPLES;
+
+                //Rounding off of pedestal calculation results
+                int pedcheck = Pedestal[ch]*10;
+                if (pedcheck%10 > 4) Pedestal[ch] = ceil(Pedestal[ch]);
+                else Pedestal[ch] = (int)Pedestal[ch];
+
+                //Get the pedestal-subtracted wave form
+                //Sum the pedestal-subtracted wave height
+                //for (int isample=0; isample<DEFAULTSAMP; isample++) {
+                for (int isample=PEDESTALSAMPLES; isample<DEFAULTSAMP; isample++) { 
+                    Qstrip[ch] += (adcwave[ch][isample] - Pedestal[ch]);
+                }
+            }
+            tree->Fill(); //Fill an event
+        }
         if (linefull==true) {
             fin >> hoge >> header[0][0] >> header[0][1]
                         >> header[1][0] >> header[1][1]
@@ -114,10 +138,21 @@ void makeTree(TString dataname = "./sin1000kHz400mV_20251211_00.txt") {
             break;
         }
 
-
         //  Show header info
         cout << Form("TrigID: %d, blocknum %d, line %d", TrigID, blocknum, blocknum/8) << endl;
         ShowConvertedHeader(header);
+
+        for (int i=0; i<HEADERNUM; i++) { //Fill head
+            for (int j=0; j<HEADBLOCK; j++) {
+                head[i] = strtol(Form("0x%s%s", header[i][0].Data(), header[i][1].Data()), NULL, 16);
+            }
+        }
+
+        //initialize
+        for (int ch = 0; ch<PAPILLONCH; ch++){
+            Pedestal[ch] = 0;
+            Qstrip[ch] = 0;
+        }
     }
 
 
@@ -134,6 +169,7 @@ void makeTree(TString dataname = "./sin1000kHz400mV_20251211_00.txt") {
             blocknum++;
         }
         adcwave[ch][sampling] = (unsigned int)EndianConvertor(waveform[ch][sampling]);
+        if(sampling < PEDESTALSAMPLES) Pedestal[ch] += adcwave[ch][sampling];
     }
     sampling++;
     //if ( sampling == SAMPLENUM ) break;
